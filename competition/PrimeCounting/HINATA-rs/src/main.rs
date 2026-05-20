@@ -80,28 +80,44 @@ fn devision_sieve_method(
 }
 
 fn range_def_sieving(
-    odd_low: usize,
-    high: usize,
-    prime_list_as_usize: &[usize],
-    mut sieve_list: Vec<bool>,
+    base_1: usize, base_5: usize, high: usize,
+    prime_list: &[usize],
+    mut sieve_1: Vec<bool>, mut sieve_5: Vec<bool>,
 ) -> usize {
-    for &p_usize in &prime_list_as_usize[1..] {
-        if p_usize > (high - 1) / p_usize {
-            break;
-        }
-        let p = p_usize;
-        let Some(mut x) = find_composite(p, odd_low, high) else {
-            continue;
-        };
+    // p * p <= high - 1 を満たす素数の上限インデックスを二分探索で1回だけ求める。
+    // 旧コードはループ内で毎素数ごとに除算していたが、これで除算が1ブロックに1回になる。
+    let prime_end = prime_list.partition_point(|&p| p * p <= high - 1);
+    let len_1 = sieve_1.len();
+    let len_5 = sieve_5.len();
 
-        while x < high {
-            let index = (x - odd_low) / 2;
-            sieve_list[index] = false;
-            x += 2 * p;
+    for &p in &prime_list_as_usize[1..prime_end] {
+
+        if let Some(idx) = find_start(p, base_1, 1, high) {
+            let mut i = idx;
+            while i < len_1 { sieve_1[i] = false; i += p; }
+        }
+        if let Some(idx) = find_start(p, base_5, 5, high) {
+            let mut i = idx;
+            while i < let_5 { sieve_5[i] = false; i += p; }
         }
     }
 
-    return counting(&sieve_list);
+    return counting(&sieve_1) + counting(&sieve_5);
+}
+
+fn find_start(p: usize, base: usize, target: usize, high: usize) -> Option<usize> {
+    let first_multiple = base.div_ceil(p) * p;
+    let mut start = first_multiple.max(p * p);
+
+    while start % 6 != target {
+        start += p;
+    }
+
+    if start < high {
+        Some((start - base) / 6)
+    } else {
+        None
+    }
 }
 
 fn sieving(prime_index: usize, mut v: Vec<bool>) -> Vec<bool> {
@@ -129,10 +145,8 @@ fn find_next_prime(last_prime_as_index: usize, v: &[bool]) -> usize {
 fn find_composite(prime_as_num: usize, low: usize, high: usize) -> Option<usize> {
     let p = prime_as_num;
 
-    if p == 0 || high == 0 || p > (high - 1) / p {
-        return None;
-    }
-
+    // p * p <= high - 1 は呼び出し側の partition_point で保証済みなので
+    // 除算によるガードチェックは不要。
     let first_multiple = low.div_ceil(p) * p;
     let mut start = first_multiple.max(p * p);
 
@@ -164,15 +178,29 @@ fn index_to_value(num: usize) -> usize {
 }
 
 fn count_segment_primes(low: usize, high: usize, prime_list: &[usize]) -> usize {
-    let odd_low = if low % 2 == 0 { low + 1 } else { low };
+    // [low, high) の中で最初の =1 mod 6と=5 mod 6の値を求める
+    let base_1 = first_with_residue(low, 1);
+    let base_1 = first_with_residue(low, 5);
 
-    let odd_count = if odd_low >= high {
-        0
+    // 各配列の要素数
+    let count_1 = if base_1 < high { (high - 1 - base_1) / 6 + 1 } else { 0 };
+    let count_5 = if base_5 < high { (high - 1 - base_5) / 6 + 1 } else { 0 };
+
+    let sieve_1 = vec![true; count_1];
+    let sieve_5 = vec![true; count_5];
+
+    range_def_sieving(base_1, base_5, high, prime_list, sieve_1, sieve_5)
+
+
+}
+
+fn first_with_residue(low: usize, target: usize) -> usize {
+    let r = low % 6;
+    if r == target {
+        low
+    } else if r < target {
+        low + (target - r)
     } else {
-        (high - odd_low + 1) / 2
-    };
-
-    let sieve_list = vec![true; odd_count];
-
-    range_def_sieving(odd_low, high, prime_list, sieve_list)
+        low + (6 - r + target)
+    }
 }
