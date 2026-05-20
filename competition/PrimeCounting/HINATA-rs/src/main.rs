@@ -90,7 +90,7 @@ fn range_def_sieving(
     let len_1 = sieve_1.len();
     let len_5 = sieve_5.len();
 
-    for &p in &prime_list_as_usize[1..prime_end] {
+    for &p in &prime_list[2..prime_end] {
 
         if let Some(idx) = find_start(p, base_1, 1, high) {
             let mut i = idx;
@@ -98,7 +98,7 @@ fn range_def_sieving(
         }
         if let Some(idx) = find_start(p, base_5, 5, high) {
             let mut i = idx;
-            while i < let_5 { sieve_5[i] = false; i += p; }
+            while i < len_5 { sieve_5[i] = false; i += p; }
         }
     }
 
@@ -109,15 +109,16 @@ fn find_start(p: usize, base: usize, target: usize, high: usize) -> Option<usize
     let first_multiple = base.div_ceil(p) * p;
     let mut start = first_multiple.max(p * p);
 
-    while start % 6 != target {
-        start += p;
+    let rem = start % 6;
+    if rem != target {
+        let diff = (target + 6 - rem) % 6;
+        // p % 6 が 1 なら inv=1、5 なら inv=5（mod 6 の逆数）
+        let inv_p_mod6 = if p % 6 == 1 { 1 } else { 5 };
+        let steps = (diff * inv_p_mod6) % 6;
+        start += steps * p;
     }
 
-    if start < high {
-        Some((start - base) / 6)
-    } else {
-        None
-    }
+    if start < high { Some((start - base) / 6) } else { None }
 }
 
 fn sieving(prime_index: usize, mut v: Vec<bool>) -> Vec<bool> {
@@ -142,20 +143,20 @@ fn find_next_prime(last_prime_as_index: usize, v: &[bool]) -> usize {
     return v.len();
 }
 
-fn find_composite(prime_as_num: usize, low: usize, high: usize) -> Option<usize> {
-    let p = prime_as_num;
+// fn find_composite(prime_as_num: usize, low: usize, high: usize) -> Option<usize> {
+//     let p = prime_as_num;
 
-    // p * p <= high - 1 は呼び出し側の partition_point で保証済みなので
-    // 除算によるガードチェックは不要。
-    let first_multiple = low.div_ceil(p) * p;
-    let mut start = first_multiple.max(p * p);
+//     // p * p <= high - 1 は呼び出し側の partition_point で保証済みなので
+//     // 除算によるガードチェックは不要。
+//     let first_multiple = low.div_ceil(p) * p;
+//     let mut start = first_multiple.max(p * p);
 
-    if start % 2 == 0 {
-        start += p;
-    }
+//     if start % 2 == 0 {
+//         start += p;
+//     }
 
-    if start < high { Some(start) } else { None }
-}
+//     if start < high { Some(start) } else { None }
+// }
 
 fn make_primelist_from_bool(prime_list_as_bool: &Vec<bool>) -> Vec<usize> {
     let mut prime_list_as_usize = vec![2];
@@ -180,7 +181,7 @@ fn index_to_value(num: usize) -> usize {
 fn count_segment_primes(low: usize, high: usize, prime_list: &[usize]) -> usize {
     // [low, high) の中で最初の =1 mod 6と=5 mod 6の値を求める
     let base_1 = first_with_residue(low, 1);
-    let base_1 = first_with_residue(low, 5);
+    let base_5 = first_with_residue(low, 5);
 
     // 各配列の要素数
     let count_1 = if base_1 < high { (high - 1 - base_1) / 6 + 1 } else { 0 };
