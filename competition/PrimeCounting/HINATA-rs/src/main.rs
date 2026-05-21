@@ -1,10 +1,13 @@
 use rayon::prelude::*;
 use std::time::Instant;
 
+#[global_allocator]
+static ALLOC: tikv_jemallocator::Jemalloc = tikv_jemallocator::Jemalloc;
+
 fn main() {
     let start = Instant::now();
 
-    let size: usize = 1_000_000_000_000;
+    let size: usize = 1_000_000_000;
     let size_root: usize = (size as f64).sqrt().ceil() as usize;
     let block_size: usize = (size_root as f64 * 0.9) as usize;
 

@@ -1,0 +1,1 @@
+{"rustc":18415816196306954164,"features":"[]","declared_features":"[]","target":983450468643584880,"profile":5652530863572545030,"path":4942398508502643691,"deps":[],"local":[{"CheckDepInfo":{"dep_info":"release/.fingerprint/lucy-rs-06ed02e63612d09d/dep-bin-lucy-rs","checksum":false}}],"rustflags":["-C","target-cpu=native"],"config":2069994364910194474,"compile_kind":0}
